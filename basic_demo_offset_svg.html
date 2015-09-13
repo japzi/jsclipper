@@ -1,0 +1,73 @@
+
+<html>
+  <head>
+    <title>Javascript Clipper Library / Offsetting polygons / SVG example</title>
+    <script src="clipper.js"></script>
+    <style>
+      h3{ margin-bottom:2px}
+      body,th,td,input,legend,fieldset,p,b,button,select,textarea {
+        font-size: 14px;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+    </style>
+    <script>
+function draw() {
+  var svg, cont = document.getElementById('svgcontainer'), i, ii, j;
+  var paths = [[{X:30,Y:30},{X:130,Y:30},{X:130,Y:130},{X:30,Y:130}],
+                 [{X:60,Y:60},{X:60,Y:100},{X:100,Y:100},{X:100,Y:60}]];
+  var scale = 100;
+  ClipperLib.JS.ScaleUpPaths(paths, scale);
+  var joinTypes = [ClipperLib.JoinType.jtSquare, ClipperLib.JoinType.jtRound, ClipperLib.JoinType.jtMiter];
+  var endType = ClipperLib.EndType.etClosedPolygon;
+
+  var joinTypesTexts = ["Square", "Round", "Miter"];
+  var deltas = [-10, 0, 10];
+
+  var co = new ClipperLib.ClipperOffset(); // constructor
+  var offsetted_paths = new ClipperLib.Paths(); // empty solution
+
+  for(i = 0; i < joinTypes.length; i++) {
+    for(ii = 0; ii < deltas.length; ii++) {
+      co.Clear();
+      co.AddPaths(paths, joinTypes[i], endType);
+      co.MiterLimit = 2;
+      co.ArcTolerance = 0.25;
+
+      co.Execute(offsetted_paths, deltas[ii] * scale);
+      //console.log(JSON.stringify(offsetted_paths));
+
+      svg = '<svg style="margin-top:10px;margin-right:10px;margin-bottom:10px;background-color:#dddddd" width="160" height="160">';
+      svg += '<path stroke="black" fill="yellow" stroke-width="2" d="' + paths2string(offsetted_paths, scale) + '"/>';
+      svg += '</svg>';
+      cont.innerHTML += svg;
+    }
+    cont.innerHTML += "<br>" + joinTypesTexts[i] + " " + deltas[0] + ", ";
+    cont.innerHTML += joinTypesTexts[i] + " " + deltas[1] + ", ";
+    cont.innerHTML += joinTypesTexts[i] + " " + deltas[2] + "<hr>";
+  }
+}
+
+// Converts Paths to SVG path string
+// and scales down the coordinates
+function paths2string (paths, scale) {
+  var svgpath = "", i, j;
+  if (!scale) scale = 1;
+  for(i = 0; i < paths.length; i++) {
+    for(j = 0; j < paths[i].length; j++){
+      if (!j) svgpath += "M";
+      else svgpath += "L";
+      svgpath += (paths[i][j].X / scale) + ", " + (paths[i][j].Y / scale);
+    }
+    svgpath += "Z";
+  }
+  if (svgpath=="") svgpath = "M0,0";
+  return svgpath;
+}
+    </script>
+  </head>
+  <body onload="draw()">
+    <h2>Javascript Clipper Library / Offsetting polygons / SVG example</h2>
+    This page shows an example of offsetting polygons and drawing them using SVG.
+    <div id="svgcontainer"></div>
+  </body>
+</html>

@@ -1,0 +1,49 @@
+
+<html>
+  <head>
+    <title>Starter Offset</title>
+    <script src="clipper.js"></script>
+  </head>
+  <body>
+      <div id="svgcontainer"></div>
+    <script>
+var paths = [[{X:30,Y:30},{X:130,Y:30},{X:130,Y:130},{X:30,Y:130}],
+                 [{X:60,Y:60},{X:60,Y:100},{X:100,Y:100},{X:100,Y:60}]];
+var scale = 100;
+ClipperLib.JS.ScaleUpPaths(paths, scale);
+// Possibly ClipperLib.Clipper.SimplifyPolygons() here
+// Possibly ClipperLib.Clipper.CleanPolygons() here
+var co = new ClipperLib.ClipperOffset(2, 0.25);
+
+// ClipperLib.EndType = {etOpenSquare: 0, etOpenRound: 1, etOpenButt: 2, etClosedPolygon: 3, etClosedLine : 4 };
+co.AddPaths(paths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+var offsetted_paths = new ClipperLib.Paths();
+co.Execute(offsetted_paths, -10 * scale);
+ //console.log(JSON.stringify(offsetted_paths));
+
+// Scale down coordinates and draw ...
+var svg = '<svg style="background-color:#dddddd" width="160" height="160">';
+svg += '<path stroke="black" fill="yellow" stroke-width="2" d="' + paths2string(offsetted_paths, scale) + '"/>';
+svg += '</svg>';
+document.getElementById("svgcontainer").innerHTML = svg;
+
+// Converts Paths to SVG path string
+// and scales down the coordinates
+function paths2string (paths, scale) {
+  var svgpath = "", i, j;
+  if (!scale) scale = 1;
+  for(i = 0; i < paths.length; i++) {
+    for(j = 0; j < paths[i].length; j++){
+      if (!j) svgpath += "M";
+      else svgpath += "L";
+      svgpath += (paths[i][j].X / scale) + ", " + (paths[i][j].Y / scale);
+    }
+    svgpath += "Z";
+  }
+  if (svgpath=="") svgpath = "M0,0";
+  return svgpath;
+}
+    </script>
+
+  </body>
+</html>

@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Javascript Clipper Library / Drawing complex SVG using Web Workers</title>
+    <style>
+      body { overflow-y: scroll; }
+      body, th, td, input, legend, fieldset, p, b, button, select, textarea { font-size:13px; font-family:Arial, Helvetica, sans-serif; }
+    </style>
+  </head>
+  <body onload="document.getElementById('bar').style.height = window.innerHeight + 'px';">
+    <button onclick="start()">Start worker</button>
+    <button onclick="draw500()">Draw 500 bars</button>
+    <button onclick="draw6000()">Draw 6000 bars</button>
+    <button onclick="draw12000()">Draw 12000 bars</button>
+    <button onclick="stop()">Stop worker</button>
+    <br>
+    <br>
+    <output id="result"></output>
+    <br>
+    <h2>Javascript Clipper Library / Drawing complex SVG using Web Workers</h2>
+    <p>This page shows a simple example of drawing random sized and random colored bars on SVG using Web Workers. Web Workers is a new technology to run Javascript in the background. The main goal of Web Workers is to avoid browser hanging, when time consuming operations are run. See <a href="http://caniuse.com/webworkers">the current browser support of Web Workers</a>.
+    <p>Above buttons are used to instruct the Worker to create colored bars using Clipper's OffsetPaths(). The worker creates SVG source as a string and sends it back to the main page, which renders finally the image.
+    <p>To test Workers, press buttons above and try immediately after that to scroll the screen. You will see, that the browser's scroll bars can be used meanwhile Worker is working. Due to slow rendering of SVG, there is a little hang when SVG is actually drawn on the screen.
+    <div id="svgcontainer"></div>
+    <div id="bar" style="height:10000px"></div>
+    <script>
+      var cont = document.getElementById('svgcontainer');
+      var ClickTime;
+      var worker;
+	  var result = document.getElementById('result');
+	  var workerbusy = false;
+      var spinner = '<svg width="800" height="400"><text font-family="Courier" font-size="40" x="400" y="160" fill="blue" text-anchor="middle">Please wait...<animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 400 155" to="360 400 155" dur="2s" repeatCount="indefinite"/></text></svg>';
+      function stop()
+      {
+        if (typeof(worker) == "undefined") return;
+        worker.terminate();
+        result.textContent = 'Worker stopped (buttons will no longer work).';
+        worker = undefined;
+        workerbusy = false;
+        cont.innerHTML = "";
+      }
+      function busy()
+      {
+        if (!workerbusy) return false;
+        result.textContent = "Worker is busy!";
+        return true;
+      }
+      function stopped()
+      {
+        if (typeof(worker) !== "undefined") return false;
+        result.textContent = "Worker is stopped!";
+        return true;
+      }
+      function draw500()
+      {
+	    if (stopped() || busy()) return;
+	    workerbusy = true;
+	    cont.innerHTML = spinner;
+        result.textContent = "Worker is running...";
+	    ClickTime = Date.now();
+        worker.postMessage({'cmd': 'draw500', 'msg': 'Draw 500 pcs'});
+      }
+      function draw6000() {
+	    if (stopped() || busy()) return;
+	    workerbusy = true;
+	    cont.innerHTML = spinner;
+        result.textContent = "Worker is running...";
+	    ClickTime = Date.now();
+        worker.postMessage({'cmd': 'draw6000', 'msg': 'Draw 6000 pcs'});
+      }
+      function draw12000() {
+	    if (stopped() || busy()) return;
+	    workerbusy = true;
+	    cont.innerHTML = spinner;
+        result.textContent = "Worker is running...";
+	    ClickTime = Date.now();
+        worker.postMessage({'cmd': 'draw12000', 'msg': 'Draw 12000 pcs'});
+      }
+      function start()
+      {
+	    if (typeof(Worker) === "undefined")
+	    {
+          result.textContent = "Sorry, your browser does not support Web Workers...";
+          return;
+        }
+        if(typeof(worker) !== "undefined")
+        {
+           result.textContent = "Worker is already started.";
+           return;
+        }
+        worker = new Worker('worker_task.js');
+        result.textContent = "Worker is now started.";
+        worker.addEventListener('message', function(e)
+        {
+          if(!e.data.result) result.textContent = e.data;
+          else
+	      {
+            var TransferEnd = Date.now();
+            var TransferStart =  Number(e.data.TransferStart);
+            var TransferTime = TransferEnd - TransferStart;
+            result.textContent = "Drawing SVG...";
+            var RenderingStart = Date.now();
+            document.getElementById('svgcontainer').innerHTML = e.data.result
+            + "<br>" + (e.data.result.match(/L/g)||[]).length + " lineTo:s";
+            var RenderingEnd = Date.now();
+            var RenderingTime = RenderingEnd - RenderingStart;
+            var EndTime = Date.now();
+            var TotalTime = EndTime - ClickTime;
+            var DrawingTime = Number(e.data.DrawingTime);
+            result.textContent = "Total time: " + TotalTime + " ms (" +
+                                "ToWorkerTransferTime: " + (TotalTime-(DrawingTime+TransferTime+RenderingTime)) + " ms + " +
+                                "DrawingTime: " + DrawingTime + " ms + " +
+                                "FromWorkerTransferTime: " + TransferTime + " ms  + " +
+                                "RenderingTime: " + RenderingTime + " ms)";
+            workerbusy = false;
+	      }
+        }, false);
+      }
+      start();
+    </script>
+  </body>
+</html>

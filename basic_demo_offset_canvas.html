@@ -1,0 +1,88 @@
+
+<html>
+  <head>
+    <title>Javascript Clipper Library / Offsetting polygons / Canvas example</title>
+    <script src="clipper.js"></script>
+    <style>
+      h3{ margin-bottom:2px}
+      body,th,td,input,legend,fieldset,p,b,button,select,textarea {
+        font-size: 14px;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+    </style>
+    <script>
+function draw() {
+  var canvas, ctx, i2, ii, i, j, x, y;
+  var paths = [[{X:30,Y:30},{X:130,Y:30},{X:130,Y:130},{X:30,Y:130}],
+                 [{X:60,Y:60},{X:60,Y:100},{X:100,Y:100},{X:100,Y:60}]];
+  var scale = 100;
+  ClipperLib.JS.ScaleUpPaths(paths, scale);
+  var joinTypes = [ClipperLib.JoinType.jtSquare, ClipperLib.JoinType.jtRound, ClipperLib.JoinType.jtMiter];
+  var endType = ClipperLib.EndType.etClosedPolygon;
+  var joinTypesTexts = ["Square", "Round", "Miter"];
+  var deltas = [-10, 0, 10];
+
+  var co = new ClipperLib.ClipperOffset(); // constructor
+  co.AddPaths(paths, true); // we add paths only once
+                            // true means closed paths (polygons)
+  var offsetted_paths = new ClipperLib.Paths(); // empty solution
+
+  for(i = 0; i < joinTypes.length; i++) {
+    for(ii = 0; ii < deltas.length; ii++) {
+
+      co.Clear();
+      co.AddPaths(paths, joinTypes[i], endType);
+      co.MiterLimit = 2;
+      co.ArcTolerance = 0.25;
+
+      co.Execute(offsetted_paths, deltas[ii] * scale);
+      //console.log(JSON.stringify(offsetted_paths));
+
+      canvas = document.getElementById("canvas" + i + "." + ii);
+      canvas.width = canvas.height = 160;
+      ctx = canvas.getContext("2d");
+      ctx.fillStyle = "red";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for(i2 = 0; i2 < offsetted_paths.length; i2++) {
+        for(j = 0; j < offsetted_paths[i2].length; j++) {
+          x = offsetted_paths[i2][j].X / scale;
+          y = offsetted_paths[i2][j].Y / scale;
+          if (!j) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+      }
+      ctx.fill();
+      ctx.stroke();
+    }
+    document.getElementById('desc' + i).innerHTML = joinTypesTexts[i] + " " + deltas[0] + ", " + joinTypesTexts[i] + " " + deltas[1] + ", " + joinTypesTexts[i] + " " + deltas[2];
+  }
+}
+    </script>
+    <style>
+      canvas { background-color:#dddddd; margin:0px; margin-right:10px; margin-bottom:10px; }
+    </style>
+  </head>
+  <body onload="draw()">
+    <h2>Javascript Clipper Library / Offsetting polygons / Canvas example</h2>
+    This page shows an example of offsetting polygons and drawing them on html5 canvas as bitmap images.
+    <br><br>
+    <canvas id="canvas0.0"></canvas>
+    <canvas id="canvas0.1"></canvas>
+    <canvas id="canvas0.2"></canvas>
+    <div id="desc0"></div>
+    <hr>
+    <canvas id="canvas1.0"></canvas>
+    <canvas id="canvas1.1"></canvas>
+    <canvas id="canvas1.2"></canvas>
+    <div id="desc1"></div>
+    <hr>
+    <canvas id="canvas2.0"></canvas>
+    <canvas id="canvas2.1"></canvas>
+    <canvas id="canvas2.2"></canvas>
+    <div id="desc2"></div>
+    <hr>
+  </body>
+</html>

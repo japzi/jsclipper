@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Clipper 6 Info and Examples</title>
+    <script src="jquery.min.js"></script>
+  </head>
+  <body>
+<div style="display:none" id="list">
+    <script src="jquery.min.js"></script>
+
+<style>
+h3{ margin-bottom:2px}
+body,th,td,input,legend,fieldset,p,b,button,select,textarea {
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+a.selected:before { content: '*'; color:red; }
+a.selected{color:red;}
+a.selected:after { content: '*'; color:red; }
+
+</style>
+<h2>Clipper 6 Info and Examples</h2>
+
+<h3>Main demo</h3>
+<a target="_parent" href="index.html?p=main_demo.html">main_demo.html</a>
+  &nbsp;&nbsp;<a target="_parent" href="main_demo.html?">To full page</a>
+  &nbsp;&nbsp;<a target="_parent" href="index.html?p=sources_as_text/main_demo.txt">Source</a><br>
+<br>
+
+<h3>Simple examples</h3>
+<a target="_parent" href="index.html?p=starter_boolean.html">starter_boolean.html</a>
+  &nbsp;&nbsp;<a target="_parent" href="index.html?p=sources_as_text/starter_boolean.txt">Source</a><br>
+
+<a target="_parent" href="index.html?p=starter_boolean_polytree.html">starter_boolean_polytree.html</a>
+  &nbsp;&nbsp;<a target="_parent" href="index.html?p=sources_as_text/starter_boolean_polytree.txt">Source</a><br>
+
+<a target="_parent" href="index.html?p=starter_offset.html">starter_offset.html</a>
+  &nbsp;&nbsp;<a target="_parent" href="index.html?p=sources_as_text/starter_offset.txt">Source</a><br>
+<br>
+
+<h3>A number of operations on the same page</h3>
+<a target="_parent" href="index.html?p=basic_demo_boolean_svg.html">basic_demo_boolean_svg.html</a>
+  &nbsp;&nbsp;<a target="_parent" href="index.html?p=sources_as_text/basic_demo_boolean_svg.txt">Source</a><br>
+
+<a target="_parent" href="index.html?p=basic_demo_boolean_canvas.html">basic_demo_boolean_canvas.html</a>
+  &nbsp;&nbsp;<a target="_parent" href="index.html?p=sources_as_text/basic_demo_boolean_canvas.txt">Source</a><br>
+
+<a target="_parent" href="index.html?p=basic_demo_offset_svg.html">basic_demo_offset_svg.html<a>
+  &nbsp;&nbsp;<a target="_parent" href="index.html?p=sources_as_text/basic_demo_offset_svg.txt">Source</a><br>
+
+<a target="_parent" href="index.html?p=basic_demo_offset_canvas.html">basic_demo_offset_canvas.html</a>
+  &nbsp;&nbsp;<a target="_parent" href="index.html?p=sources_as_text/basic_demo_offset_canvas.txt">Source</a><br>
+
+<a target="_parent" href="index.html?p=basic_demo_boolean_expolygons.html">ExPolygons demo</a>
+  &nbsp;&nbsp;<a target="_parent" href="index.html?p=sources_as_text/basic_demo_boolean_expolygons.txt">Source</a><br>
+<br>
+
+
+
+<h3>Misc examples</h3>
+<a target="_parent" href="index.html?p=open_closed.html">open_closed.html</a>
+  &nbsp;&nbsp;<a target="_parent" href="index.html?p=sources_as_text/open_closed.txt">Source</a><br>
+
+<a target="_parent" href="index.html?p=worker_main.html">worker_main.html</a>
+  &nbsp;&nbsp;<a target="_parent" href="index.html?p=sources_as_text/worker_main.txt">Source</a><br>
+
+<a target="_parent" href="index.html?p=worker_task.js">worker_task.js</a><br>
+
+<a target="_parent" href="index.html?p=minkowski.html">minkowski.html</a>
+  &nbsp;&nbsp;<a target="_parent" href="index.html?p=sources_as_text/minkowski.txt">Source</a><br>
+
+<a target="_parent" href="index.html?p=metrics.html">metrics.html</a>
+  &nbsp;&nbsp;<a target="_parent" href="index.html?p=sources_as_text/metrics.txt">Source</a><br>
+
+<h3>Clipper source</h3>
+<a target="_parent" href="index.html?p=clipper_unminified.js">clipper_unminified.js</a><br>
+<a target="_parent" href="index.html?p=clipper.js">clipper.js</a><br>
+
+<h3>Clipper documentation</h3>
+<a target="_blank" href="https://sourceforge.net/p/jsclipper/wiki/documentation/">Clipper 6 documentation</a>
+<br>
+
+<h3>Migration guide for Clipper 5 users</h3>
+<a target="_blank" href="https://sourceforge.net/p/jsclipper/wiki/migration5to6/">Migration guide</a>
+
+<h3>Tutorials</h3>
+<a target="_blank" href="https://sourceforge.net/p/jsclipper/wiki/Home%206/">Main tutorial</a><br>
+<a target="_blank" href="https://sourceforge.net/p/jsclipper/wiki/Main_Demo%206/">Main Demo tutorial</a><br>
+<a target="_blank" href="https://sourceforge.net/p/jsclipper/wiki/ExPolygons%20and%20PolyTree%206/">ExPolygons and PolyTree</a><br>
+<a target="_blank" href="https://sourceforge.net/p/jsclipper/wiki/Web%20Workers%206/">Web Workers tutorial</a>
+<br>
+<br>
+<script>
+$("document").ready(function(){
+
+var qs = (function(a) {
+    if (a == "") return {};
+    var b = {};
+    for (var i = 0; i < a.length; ++i)
+    {
+        var p=a[i].split('=');
+        if (p.length != 2) continue;
+        b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+    }
+    return b;
+})(window.location.search.substr(1).split('&'));
+
+if(qs["p"]=="undefined") qs["p"] = "main_demo.html";
+$("a[href^='" + "index.html?p=" + qs["p"] + "']").addClass("selected");
+});
+</script>
+
+</div>
+
+<iframe name="iframe" id="iframe" style="position:fixed;width:76%;height:100%;right:0px;top:0px" src="about:blank"></iframe>
+<iframe id="list_iframe" style="position:fixed;width:23%;height:100%;left:0px;top:0px" src="about:blank"></iframe>
+
+<script type="text/javascript">
+var doc = document.getElementById('list_iframe').contentWindow.document;
+doc.open();
+doc.write(document.getElementById('list').innerHTML);
+doc.close();
+$("document").ready(function () {
+  var qs = (function(a) {
+    if (a == "") return {};
+    var b = {};
+    for (var i = 0; i < a.length; ++i)
+    {
+        var p=a[i].split('=');
+        if (p.length != 2) continue;
+        b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+    }
+    return b;
+  })(window.location.search.substr(1).split('&'));
+
+  var doc = document.getElementById('list_iframe').contentWindow.document;
+  var iframe = document.getElementById('iframe');
+  if(qs["p"])
+  {
+    var hash = qs["p"];
+    $(doc).find("a[href='"+hash+"']").addClass("selected");
+    iframe.src = hash;
+  }
+  else
+  {
+    $(doc).find("a[href='main_demo.html']").addClass("selected");
+    iframe.src = "main_demo.html";
+  }
+});
+</script>
+
+  </body>
+
+</html>
