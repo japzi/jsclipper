@@ -1,4 +1,4 @@
-// rev 452
+// rev 453
 /********************************************************************************
  *                                                                              *
  * Author    :  Angus Johnson                                                   *
@@ -63,6 +63,15 @@
  * http://www-cs-students.stanford.edu/~tjw/jsbn/LICENSE                        *
  *                                                                              *
  *******************************************************************************/
+ /*******************************************************************************
+  *                                                                             *
+  * Author    :  Ruwan Janapriya Egoda Gamage                                   *
+  * Version   :  6.1.3.2                                                        *
+  * Date      :  12 September 15                                                *
+  *                                                                             *
+  * Starting from 6.1.3.2, I'm porting latest changes from the C# lib to        *
+  * jsClipper                                                                   *
+  *******************************************************************************/
 (function(){function k(a,b,c){d.biginteger_used=1;null!=a&&("number"==typeof a&&"undefined"==typeof b?this.fromInt(a):"number"==typeof a?this.fromNumber(a,b,c):null==b&&"string"!=typeof a?this.fromString(a,256):this.fromString(a,b))}function q(){return new k(null)}function Q(a,b,c,e,d,g){for(;0<=--g;){var h=b*this[a++]+c[e]+d;d=Math.floor(h/67108864);c[e++]=h&67108863}return d}function R(a,b,c,e,d,g){var h=b&32767;for(b>>=15;0<=--g;){var l=this[a]&32767,k=this[a++]>>15,n=b*l+k*h,l=h*l+((n&32767)<<
 15)+c[e]+(d&1073741823);d=(l>>>30)+(n>>>15)+b*k+(d>>>30);c[e++]=l&1073741823}return d}function S(a,b,c,e,d,g){var h=b&16383;for(b>>=14;0<=--g;){var l=this[a]&16383,k=this[a++]>>14,n=b*l+k*h,l=h*l+((n&16383)<<14)+c[e]+d;d=(l>>28)+(n>>14)+b*k;c[e++]=l&268435455}return d}function L(a,b){var c=B[a.charCodeAt(b)];return null==c?-1:c}function v(a){var b=q();b.fromInt(a);return b}function C(a){var b=1,c;0!=(c=a>>>16)&&(a=c,b+=16);0!=(c=a>>8)&&(a=c,b+=8);0!=(c=a>>4)&&(a=c,b+=4);0!=(c=a>>2)&&(a=c,b+=2);0!=
 a>>1&&(b+=1);return b}function x(a){this.m=a}function y(a){this.m=a;this.mp=a.invDigit();this.mpl=this.mp&32767;this.mph=this.mp>>15;this.um=(1<<a.DB-15)-1;this.mt2=2*a.t}function T(a,b){return a&b}function I(a,b){return a|b}function M(a,b){return a^b}function N(a,b){return a&~b}function A(){}function O(a){return a}function w(a){this.r2=q();this.q3=q();k.ONE.dlShiftTo(2*a.t,this.r2);this.mu=this.r2.divide(a);this.m=a}var d={},D=!1;"undefined"!==typeof module&&module.exports?(module.exports=d,D=!0):
