@@ -1,9 +1,9 @@
-// rev 453
+// rev 454
 /********************************************************************************
  *                                                                              *
  * Author    :  Angus Johnson                                                   *
- * Version   :  6.1.3a                                                          *
- * Date      :  22 January 2014                                                 *
+ * Version   :  6.1.4                                                          *
+ * Date      :  6 February 2014                                                 *
  * Website   :  http://www.angusj.com                                           *
  * Copyright :  Angus Johnson 2010-2014                                         *
  *                                                                              *
@@ -66,7 +66,7 @@
 /*******************************************************************************
  *                                                                              *
  * Author    :  Ruwan Janapriya Egoda Gamage                                    *
- * Version   :  6.1.3.2                                                         *
+ * Version   :  6.1.4                                                           *
  * Date      :  12 September 15                                                 *
  *                                                                              *
  * Starting from 6.1.3.2, I'm porting latest changes from the C# lib to         *
@@ -3026,7 +3026,7 @@
     this.PreserveCollinear = (4 & InitOptions) !== 0;
     if (use_xyz)
     {
-      this.ZFillFunction = null; // function (IntPoint vert1, IntPoint vert2, ref IntPoint intersectPt);
+      this.ZFillFunction = null; // function (IntPoint bot1, IntPoint top1, IntPoint bot2, IntPoint top2, ref IntPoint intersectPt);
     }
   };
   ClipperLib.Clipper.ioReverseSolution = 1;
@@ -3283,16 +3283,12 @@
   };
   if (use_xyz)
   {
-    ClipperLib.Clipper.prototype.SetZ = function (pt, e)
+    ClipperLib.Clipper.prototype.SetZ = function (pt, e1, e2)
     {
       pt.Z = 0;
       if (this.ZFillFunction !== null)
       {
-        //put the 'preferred' point as first parameter ...
-        if (e.OutIdx < 0)
-          this.ZFillFunction(e.Bot, e.Top, pt); //outside a path so presume entering
-        else
-          this.ZFillFunction(e.Top, e.Bot, pt); //inside a path so presume exiting
+        this.ZFillFunction(e1.Bot, e1.Top, e2.Bot, e2.Top, pt);
       }
     };
     //------------------------------------------------------------------------------
@@ -3847,25 +3843,6 @@
       newOp.Prev = newOp;
       if (!outRec.IsOpen)
         this.SetHoleState(e, outRec);
-      if (use_xyz)
-      {
-        if (ClipperLib.IntPoint.op_Equality(pt, e.Bot))
-        {
-          //newOp.Pt = e.Bot;
-          newOp.Pt.X = e.Bot.X;
-          newOp.Pt.Y = e.Bot.Y;
-          newOp.Pt.Z = e.Bot.Z;
-        }
-        else if (ClipperLib.IntPoint.op_Equality(pt, e.Top))
-        {
-          //newOp.Pt = e.Top;
-          newOp.Pt.X = e.Top.X;
-          newOp.Pt.Y = e.Top.Y;
-          newOp.Pt.Z = e.Top.Z;
-        }
-        else
-          this.SetZ(newOp.Pt, e);
-      }
       e.OutIdx = outRec.Idx;
       //nb: do this after SetZ !
       return newOp;
@@ -3890,25 +3867,6 @@
       op.Prev = newOp;
       if (ToFront)
         outRec.Pts = newOp;
-      if (use_xyz)
-      {
-        if (ClipperLib.IntPoint.op_Equality(pt, e.Bot))
-        {
-          //newOp.Pt = e.Bot;
-          newOp.Pt.X = e.Bot.X;
-          newOp.Pt.Y = e.Bot.Y;
-          newOp.Pt.Z = e.Bot.Z;
-        }
-        else if (ClipperLib.IntPoint.op_Equality(pt, e.Top))
-        {
-          //newOp.Pt = e.Top;
-          newOp.Pt.X = e.Top.X;
-          newOp.Pt.Y = e.Top.Y;
-          newOp.Pt.Z = e.Top.Z;
-        }
-        else
-          this.SetZ(newOp.Pt, e);
-      }
       return newOp;
     }
   };
@@ -4226,7 +4184,13 @@
         if (e1.WindDelta === 0 && e2.WindDelta === 0)
         {
           if ((e1stops || e2stops) && e1Contributing && e2Contributing)
+          {
+            if (use_xyz)
+            {
+              this.SetZ(pt, e1, e2);
+            }
             this.AddLocalMaxPoly(e1, e2, pt);
+        }
         }
         //if intersecting a subj line with a subj poly ...
         else if (e1.PolyTyp == e2.PolyTyp &&
@@ -4236,6 +4200,10 @@
           {
             if (e2Contributing)
             {
+              if (use_xyz)
+              {
+                this.SetZ(pt, e1, e2);
+              }
               this.AddOutPt(e1, pt);
               if (e1Contributing)
                 e1.OutIdx = -1;
@@ -4245,6 +4213,10 @@
           {
             if (e1Contributing)
             {
+              if (use_xyz)
+              {
+                this.SetZ(pt, e1, e2);
+              }
               this.AddOutPt(e2, pt);
               if (e2Contributing)
                 e2.OutIdx = -1;
@@ -4256,6 +4228,10 @@
           if ((e1.WindDelta === 0) && Math.abs(e2.WindCnt) == 1 &&
             (this.m_ClipType != ClipperLib.ClipType.ctUnion || e2.WindCnt2 === 0))
           {
+            if (use_xyz)
+            {
+              this.SetZ(pt, e1, e2);
+            }
             this.AddOutPt(e1, pt);
             if (e1Contributing)
               e1.OutIdx = -1;
@@ -4263,6 +4239,10 @@
           else if ((e2.WindDelta === 0) && (Math.abs(e1.WindCnt) == 1) &&
             (this.m_ClipType != ClipperLib.ClipType.ctUnion || e1.WindCnt2 === 0))
           {
+            if (use_xyz)
+            {
+              this.SetZ(pt, e1, e2);
+            }
             this.AddOutPt(e2, pt);
             if (e2Contributing)
               e2.OutIdx = -1;
@@ -4364,9 +4344,19 @@
     {
       if (e1stops || e2stops || (e1Wc !== 0 && e1Wc != 1) || (e2Wc !== 0 && e2Wc != 1) ||
         (e1.PolyTyp != e2.PolyTyp && this.m_ClipType != ClipperLib.ClipType.ctXor))
+      {
+        if (use_xyz)
+        {
+          this.SetZ(pt, e1, e2);
+        }
         this.AddLocalMaxPoly(e1, e2, pt);
+      }
       else
       {
+        if (use_xyz)
+        {
+          this.SetZ(pt, e1, e2);
+        }
         this.AddOutPt(e1, pt);
         this.AddOutPt(e2, pt);
         ClipperLib.Clipper.SwapSides(e1, e2);
@@ -4377,6 +4367,10 @@
     {
       if (e2Wc === 0 || e2Wc == 1)
       {
+        if (use_xyz)
+        {
+          this.SetZ(pt, e1, e2);
+        }
         this.AddOutPt(e1, pt);
         ClipperLib.Clipper.SwapSides(e1, e2);
         ClipperLib.Clipper.SwapPolyIndexes(e1, e2);
@@ -4386,6 +4380,10 @@
     {
       if (e1Wc === 0 || e1Wc == 1)
       {
+        if (use_xyz)
+        {
+          this.SetZ(pt, e1, e2);
+        }
         this.AddOutPt(e2, pt);
         ClipperLib.Clipper.SwapSides(e1, e2);
         ClipperLib.Clipper.SwapPolyIndexes(e1, e2);
@@ -4421,24 +4419,52 @@
         break;
       }
       if (e1.PolyTyp != e2.PolyTyp)
+      {
+        if (use_xyz)
+        {
+          this.SetZ(pt, e1, e2);
+        }
         this.AddLocalMinPoly(e1, e2, pt);
+      }
       else if (e1Wc == 1 && e2Wc == 1)
         switch (this.m_ClipType)
         {
         case ClipperLib.ClipType.ctIntersection:
           if (e1Wc2 > 0 && e2Wc2 > 0)
+          {
+            if (use_xyz)
+            {
+              this.SetZ(pt, e1, e2);
+            }
             this.AddLocalMinPoly(e1, e2, pt);
+          }
           break;
         case ClipperLib.ClipType.ctUnion:
           if (e1Wc2 <= 0 && e2Wc2 <= 0)
+          {
+            if (use_xyz)
+            {
+              this.SetZ(pt, e1, e2);
+            }
             this.AddLocalMinPoly(e1, e2, pt);
+          }
           break;
         case ClipperLib.ClipType.ctDifference:
           if (((e1.PolyTyp == ClipperLib.PolyType.ptClip) && (e1Wc2 > 0) && (e2Wc2 > 0)) ||
             ((e1.PolyTyp == ClipperLib.PolyType.ptSubject) && (e1Wc2 <= 0) && (e2Wc2 <= 0)))
+          {
+            if (use_xyz)
+            {
+              this.SetZ(pt, e1, e2);
+            }
             this.AddLocalMinPoly(e1, e2, pt);
+          }
           break;
         case ClipperLib.ClipType.ctXor:
+          if (use_xyz)
+          {
+            this.SetZ(pt, e1, e2);
+          }
           this.AddLocalMinPoly(e1, e2, pt);
           break;
         }
@@ -5018,9 +5044,14 @@
             (ePrev.OutIdx >= 0) && (ePrev.Curr.X == e.Curr.X) &&
             (ePrev.WindDelta !== 0))
           {
-            var op = this.AddOutPt(ePrev, e.Curr);
-            var op2 = this.AddOutPt(e, e.Curr);
-            this.AddJoin(op, op2, e.Curr);
+            var ip = new ClipperLib.IntPoint(e.Curr);
+            if (use_xyz)
+            {
+              this.SetZ(ip, ePrev, e);
+            }
+            var op = this.AddOutPt(ePrev, ip);
+            var op2 = this.AddOutPt(e, ip);
+            this.AddJoin(op, op2, ip);
             //StrictlySimple (type-3) join
           }
         }
@@ -5396,6 +5427,7 @@
     if (isHorizontal && (ClipperLib.IntPoint.op_Equality(j.OffPt, j.OutPt1.Pt)) && (ClipperLib.IntPoint.op_Equality(j.OffPt, j.OutPt2.Pt)))
     {
       //Strictly Simple join ...
+      if (outRec1 != outRec2) return false;
       op1b = j.OutPt1.Next;
       while (op1b != op1 && (ClipperLib.IntPoint.op_Equality(op1b.Pt, j.OffPt)))
         op1b = op1b.Next;
@@ -5604,6 +5636,7 @@
   ClipperLib.Clipper.PointInPolygon = function (pt, path)
   {
     //returns 0 if false, +1 if true, -1 if pt ON polygon boundary
+    //See "The Point in Polygon Problem for Arbitrary Polygons" by Hormann & Agathos
     //http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.88.5498&rep=rep1&type=pdf
     var result = 0,
       cnt = path.length;
@@ -5653,54 +5686,52 @@
   ClipperLib.Clipper.prototype.PointInPolygon = function (pt, op)
   {
     //returns 0 if false, +1 if true, -1 if pt ON polygon boundary
+    //See "The Point in Polygon Problem for Arbitrary Polygons" by Hormann & Agathos
     //http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.88.5498&rep=rep1&type=pdf
     var result = 0;
     var startOp = op;
-    for (;;)
+    //divide all points by 4 to circumvent rounding issues. (Somewhat brutal but
+    //fairly safe given that this function is only called from Poly2ContainsPoly1.)
+    var ptx = pt.X, pty = pt.Y;
+    var poly0x = op.Pt.X, poly0y = op.Pt.Y;
+    do
     {
-      var poly0x = op.Pt.X,
-        poly0y = op.Pt.Y;
-      var poly1x = op.Next.Pt.X,
-        poly1y = op.Next.Pt.Y;
-      if (poly1y == pt.Y)
+      op = op.Next;
+      var poly1x = op.Pt.X, poly1y = op.Pt.Y;
+
+      if (poly1y == pty)
       {
-        if ((poly1x == pt.X) || (poly0y == pt.Y && ((poly1x > pt.X) == (poly0x < pt.X))))
-          return -1;
+        if ((poly1x == ptx) || (poly0y == pty &&
+          ((poly1x > ptx) == (poly0x < ptx)))) return -1;
       }
-      if ((poly0y < pt.Y) != (poly1y < pt.Y))
+      if ((poly0y < pty) != (poly1y < pty))
       {
-        if (poly0x >= pt.X)
+        if (poly0x >= ptx)
         {
-          if (poly1x > pt.X)
-            result = 1 - result;
+          if (poly1x > ptx) result = 1 - result;
           else
           {
-            var d = (poly0x - pt.X) * (poly1y - pt.Y) - (poly1x - pt.X) * (poly0y - pt.Y);
-            if (d == 0)
-              return -1;
-            if ((d > 0) == (poly1y > poly0y))
-              result = 1 - result;
+            var d = (poly0x - ptx) * (poly1y - pty) -
+              (poly1x - ptx) * (poly0y - pty);
+            if (d == 0) return -1;
+            if ((d > 0) == (poly1y > poly0y)) result = 1 - result;
           }
         }
         else
         {
-          if (poly1x > pt.X)
+          if (poly1x > ptx)
           {
-            var d = (poly0x - pt.X) * (poly1y - pt.Y) - (poly1x - pt.X) * (poly0y - pt.Y);
-            if (d == 0)
-              return -1;
-            if ((d > 0) == (poly1y > poly0y))
-              result = 1 - result;
+            var d = (poly0x - ptx) * (poly1y - pty) -
+              (poly1x - ptx) * (poly0y - pty);
+            if (d == 0) return -1;
+            if ((d > 0) == (poly1y > poly0y)) result = 1 - result;
           }
         }
       }
-      op = op.Next;
-      if (startOp == op)
-        break;
-    }
+      poly0x = poly1x; poly0y = poly1y;
+    } while (startOp != op);
     return result;
   };
-
   ClipperLib.Clipper.prototype.Poly2ContainsPoly1 = function (outPt1, outPt2)
   {
     var op = outPt1;
@@ -6090,38 +6121,53 @@
           quad.reverse();
         quads.push(quad);
       }
-    var c = new ClipperLib.Clipper(0);
-    c.AddPaths(quads, ClipperLib.PolyType.ptSubject, true);
-    c.Execute(ClipperLib.ClipType.ctUnion, result, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
-    return result;
+    return quads;
   };
+  //------------------------------------------------------------------------------
+
+  ClipperLib.Clipper.TranslatePath = function (path, delta)
+  {
+    var outPath = [];
+    for (var i = 0; i < path.length; i++)
+      outPath.push(new ClipperLib.IntPoint(path[i].X + delta.X, path[i].Y + delta.Y));
+    return outPath;
+  }
 
   ClipperLib.Clipper.MinkowskiSum = function ()
   {
     var a = arguments,
       alen = a.length;
-    if (alen == 3) // MinkowskiSum(Path pattern, path, pathIsClosed)
+    if (alen == 3) // MinkowskiSum(pattern, path, pathIsClosed)
     {
       var pattern = a[0],
         path = a[1],
         pathIsClosed = a[2];
-      return ClipperLib.Clipper.Minkowski(pattern, path, true, pathIsClosed);
+      var paths = ClipperLib.Clipper.Minkowski(pattern, path, true, pathIsClosed);
+      var c = new ClipperLib.Clipper(0);
+      c.AddPaths(paths, ClipperLib.PolyType.ptSubject, true);
+      c.Execute(ClipperLib.ClipType.ctUnion, paths, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+      return paths;
     }
-    else if (alen == 4) // MinkowskiSum(pattern, paths, pathFillType, pathIsClosed)
+    else if (alen == 4) // MinkowskiSum(pattern, paths, polyFillType, pathIsClosed) Ignored change: in 6.1.4, polyFillType was removed and hardcoded to ClipperLib.PolyFillType.pftNonZero. this change makes both functions have arg.length == 3, we might have to separate these functions
     {
       var pattern = a[0],
         paths = a[1],
         pathFillType = a[2],
         pathIsClosed = a[3];
+
+      var solution = new ClipperLib.Paths();
       var c = new ClipperLib.Clipper(),
         tmp;
       for (var i = 0, ilen = paths.length; i < ilen; ++i)
       {
         var tmp = ClipperLib.Clipper.Minkowski(pattern, paths[i], true, pathIsClosed);
         c.AddPaths(tmp, ClipperLib.PolyType.ptSubject, true);
+        if (pathIsClosed)
+        {
+          var path = ClipperLib.Clipper.TranslatePath(paths[i], pattern[0]);
+          c.AddPath(path, ClipperLib.PolyType.ptClip, true);
+        }
       }
-      if (pathIsClosed) c.AddPaths(paths, ClipperLib.PolyType.ptClip, true);
-      var solution = new ClipperLib.Paths();
       c.Execute(ClipperLib.ClipType.ctUnion, solution, pathFillType, pathFillType);
       return solution;
     }
@@ -6129,7 +6175,11 @@
 
   ClipperLib.Clipper.MinkowskiDiff = function (pattern, path, pathIsClosed)
   {
-    return ClipperLib.Clipper.Minkowski(pattern, path, false, pathIsClosed);
+    var paths = ClipperLib.Clipper.Minkowski(pattern, path, false, pathIsClosed);
+    var c = new ClipperLib.Clipper(0);
+    c.AddPaths(paths, ClipperLib.PolyType.ptSubject, true);
+    c.Execute(ClipperLib.ClipType.ctUnion, paths, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+    return paths;
   };
 
   ClipperLib.Clipper.PolyTreeToPaths = function (polytree)
@@ -6522,7 +6572,7 @@
   ClipperLib.ClipperOffset.prototype.OffsetPoint = function (j, k, jointype)
   {
     this.m_sinA = (this.m_normals[k].X * this.m_normals[j].Y - this.m_normals[j].X * this.m_normals[k].Y);
-    if (this.m_sinA < 0.00005 && this.m_sinA > -0.00005)
+    if (this.m_sinA < 0.0001 && this.m_sinA > -0.0001)
       return k;
     else if (this.m_sinA > 1)
       this.m_sinA = 1.0;
