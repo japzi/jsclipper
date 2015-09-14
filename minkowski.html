@@ -25,7 +25,7 @@ function draw()
   var shape = [{"X":4,"Y":-6},{"X":6,"Y":-6},{"X":-4,"Y":6},{"X":-6,"Y":6}];
   ClipperLib.JS.ScaleUpPath (shape, 100);
 
-  var solution = ClipperLib.Clipper.MinkowskiSum(shape, paths, ClipperLib.PolyFillType.pftEvenOdd, false);
+  var solution = ClipperLib.Clipper.MinkowskiSum(shape, paths, ClipperLib.PolyFillType.pftNonZero, false);
 
   svg = '<svg style="margin-top:10px; margin-right:10px;margin-bottom:10px;background-color:#dddddd" width="485" height="250">';
   svg += '<path stroke="black" fill="yellow" stroke-width="2" d="' + paths2string(paths, scale) + '"/>';
