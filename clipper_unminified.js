@@ -1,8 +1,8 @@
-// rev 454
+// Since rev 454, only following revisions are added: 463
 /********************************************************************************
  *                                                                              *
  * Author    :  Angus Johnson                                                   *
- * Version   :  6.1.4                                                          *
+ * Version   :  6.1.4                                                           *
  * Date      :  6 February 2014                                                 *
  * Website   :  http://www.angusj.com                                           *
  * Copyright :  Angus Johnson 2010-2014                                         *
@@ -66,8 +66,8 @@
 /*******************************************************************************
  *                                                                              *
  * Author    :  Ruwan Janapriya Egoda Gamage                                    *
- * Version   :  6.1.4                                                           *
- * Date      :  12 September 15                                                 *
+ * Version   :  6.1.5                                                           *
+ * Date      :  19 September 15                                                 *
  *                                                                              *
  * Starting from 6.1.3.2, I'm porting latest changes from the C# lib to         *
  * jsClipper                                                                    *
@@ -2583,12 +2583,20 @@
     var StartX;
     if (E.Dx == ClipperLib.ClipperBase.horizontal)
     {
-      //it's possible for adjacent overlapping horz edges to start heading left
-      //before finishing right, so ...
+      //first we need to be careful here with open paths because this
+      //may not be a true local minima (ie may be following a skip edge).
+      //also, watch for adjacent horz edges to start heading left
+      //before finishing right ...
       if (IsClockwise)
-        StartX = E.Prev.Bot.X;
+      {
+        if (E.Prev.Bot.Y == E.Bot.Y) StartX = E.Prev.Bot.X;
+        else StartX = E.Prev.Top.X;
+      }
       else
-        StartX = E.Next.Bot.X;
+      {
+        if (E.Next.Bot.Y == E.Bot.Y) StartX = E.Next.Bot.X;
+        else StartX = E.Next.Top.X;
+      }
       if (E.Bot.X != StartX)
         this.ReverseHorizontal(E);
     }
