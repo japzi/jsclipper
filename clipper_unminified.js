@@ -1,4 +1,4 @@
-// Since rev 454, only following revisions are added: 463,462,465,467+468
+// Since rev 454, only following revisions are added: 463,462,465,467+468,469
 /********************************************************************************
  *                                                                              *
  * Author    :  Angus Johnson                                                   *
@@ -2838,7 +2838,7 @@
       return true;
     }
     this.m_edges.push(edges);
-    var clockwise;
+    var leftBoundIsForward;
     var EMin = null;
 
     //workaround to avoid an endless loop in the while loop below when
@@ -2861,14 +2861,14 @@
       {
         locMin.LeftBound = E.Prev;
         locMin.RightBound = E;
-        clockwise = false;
+        leftBoundIsForward = false;
         //Q.nextInLML = Q.prev
       }
       else
       {
         locMin.LeftBound = E;
         locMin.RightBound = E.Prev;
-        clockwise = true;
+        leftBoundIsForward = true;
         //Q.nextInLML = Q.next
       }
       locMin.LeftBound.Side = ClipperLib.EdgeSide.esLeft;
@@ -2880,14 +2880,17 @@
       else
         locMin.LeftBound.WindDelta = 1;
       locMin.RightBound.WindDelta = -locMin.LeftBound.WindDelta;
-      E = this.ProcessBound(locMin.LeftBound, clockwise);
-      var E2 = this.ProcessBound(locMin.RightBound, !clockwise);
+      E = this.ProcessBound(locMin.LeftBound, leftBoundIsForward);
+      if (E.OutIdx == ClipperLib.ClipperBase.Skip) E = this.ProcessBound(E, leftBoundIsForward);
+      var E2 = this.ProcessBound(locMin.RightBound, !leftBoundIsForward);
+      if (E2.OutIdx == ClipperLib.ClipperBase.Skip) E2 = this.ProcessBound(E2, !leftBoundIsForward);
+
       if (locMin.LeftBound.OutIdx == ClipperLib.ClipperBase.Skip)
         locMin.LeftBound = null;
       else if (locMin.RightBound.OutIdx == ClipperLib.ClipperBase.Skip)
         locMin.RightBound = null;
       this.InsertLocalMinima(locMin);
-      if (!clockwise)
+      if (!leftBoundIsForward)
         E = E2;
     }
     return true;
