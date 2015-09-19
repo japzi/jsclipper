@@ -1,4 +1,4 @@
-// Since rev 454, only following revisions are added: 463, 462
+// Since rev 454, only following revisions are added: 463,462,465
 /********************************************************************************
  *                                                                              *
  * Author    :  Angus Johnson                                                   *
@@ -2767,7 +2767,7 @@
       eLoopStop = eStart;
     for (;;)
     {
-      if (ClipperLib.IntPoint.op_Equality(E.Curr, E.Next.Curr))
+      if ((ClipperLib.IntPoint.op_Equality(E.Curr, E.Next.Curr) && (Closed || E.Next != eStart)))
       {
         if (E == E.Next)
           break;
@@ -2844,6 +2844,11 @@
     this.m_edges.push(edges);
     var clockwise;
     var EMin = null;
+
+    //workaround to avoid an endless loop in the while loop below when
+    //open paths have matching start and end points ...
+    if (E.Prev.Bot == E.Prev.Top) E = E.Next;
+
     for (;;)
     {
       E = this.FindNextLocMin(E);
