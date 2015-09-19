@@ -1,4 +1,4 @@
-// Since rev 454, only following revisions are added: 463
+// Since rev 454, only following revisions are added: 463, 462
 /********************************************************************************
  *                                                                              *
  * Author    :  Angus Johnson                                                   *
@@ -2793,7 +2793,7 @@
         continue;
       }
       E = E.Next;
-      if (E == eLoopStop)
+      if ((E == eLoopStop) || (!Closed && E.Next == eStart))
         break;
     }
     if ((!Closed && (E == E.Next)) || (Closed && (E.Prev == E.Next)))
@@ -3379,8 +3379,7 @@
           {
             //nb: For calculating winding counts etc, IntersectEdges() assumes
             //that param1 will be to the right of param2 ABOVE the intersection ...
-            this.IntersectEdges(rb, e, lb.Curr, false);
-            //order important here
+            this.IntersectEdges(rb, e, lb.Curr, true); //order important here
             e = e.NextInAEL;
           }
       }
@@ -3905,28 +3904,6 @@
       return true;
     else
       return false;
-  };
-  ClipperLib.Clipper.prototype.InsertPolyPtBetween = function (p1, p2, pt)
-  {
-    var result = new ClipperLib.OutPt();
-    //result.Pt = pt;
-    result.Pt.X = pt.X;
-    result.Pt.Y = pt.Y;
-    if (p2 == p1.Next)
-    {
-      p1.Next = result;
-      p2.Prev = result;
-      result.Next = p2;
-      result.Prev = p1;
-    }
-    else
-    {
-      p2.Next = result;
-      p1.Prev = result;
-      result.Next = p1;
-      result.Prev = p2;
-    }
-    return result;
   };
   ClipperLib.Clipper.prototype.SetHoleState = function (e, outRec)
   {
@@ -5001,10 +4978,11 @@
       }
       else
         ip.Y = edge2.Top.Y;
-      if (Math.abs(edge1.Dx) < Math.abs(edge2.Dx))
-        ip.X = ClipperLib.Clipper.TopX(edge1, ip.Y);
-      else
+      //better to use the more vertical edge to derive X ...
+      if (Math.abs(edge1.Dx) > Math.abs(edge2.Dx))
         ip.X = ClipperLib.Clipper.TopX(edge2, ip.Y);
+      else
+        ip.X = ClipperLib.Clipper.TopX(edge1, ip.Y);
     }
     return true;
   };
@@ -6289,7 +6267,7 @@
         if (path[i].Y > newNode.m_polygon[k].Y || (path[i].Y == newNode.m_polygon[k].Y && path[i].X < newNode.m_polygon[k].X))
           k = j;
       }
-    if ((endType == ClipperLib.EndType.etClosedPolygon && j < 2) || (endType != ClipperLib.EndType.etClosedPolygon && j < 0))
+    if (endType == ClipperLib.EndType.etClosedPolygon && j < 2)
       return;
     this.m_polyNodes.AddChild(newNode);
     //if this path's lowest pt is lower than all the others then update m_lowest
@@ -6580,8 +6558,18 @@
   ClipperLib.ClipperOffset.prototype.OffsetPoint = function (j, k, jointype)
   {
     this.m_sinA = (this.m_normals[k].X * this.m_normals[j].Y - this.m_normals[j].X * this.m_normals[k].Y);
-    if (this.m_sinA < 0.0001 && this.m_sinA > -0.0001)
-      return k;
+    if (Math.abs(this.m_sinA * this.m_delta) < 1.0)
+    {
+      //dot product ...
+      var cosA = (this.m_normals[k].X * this.m_normals[j].X + this.m_normals[j].Y * this.m_normals[k].Y);
+      if (cosA > 0) // angle ==> 0 degrees
+      {
+        this.m_destPoly.push(new ClipperLib.IntPoint(ClipperLib.ClipperOffset.Round(this.m_srcPoly[j].X + this.m_normals[k].X * this.m_delta),
+          ClipperLib.ClipperOffset.Round(this.m_srcPoly[j].Y + this.m_normals[k].Y * this.m_delta)));
+        return k;
+      }
+      //else angle ==> 180 degrees
+    }
     else if (this.m_sinA > 1)
       this.m_sinA = 1.0;
     else if (this.m_sinA < -1)
