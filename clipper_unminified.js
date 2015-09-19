@@ -1,4 +1,4 @@
-// Since rev 454, only following revisions are added: 463,462,465
+// Since rev 454, only following revisions are added: 463,462,465,467+468
 /********************************************************************************
  *                                                                              *
  * Author    :  Angus Johnson                                                   *
@@ -2575,101 +2575,16 @@
     }
     return E;
   };
-  ClipperLib.ClipperBase.prototype.ProcessBound = function (E, IsClockwise)
+  ClipperLib.ClipperBase.prototype.ProcessBound = function (E, LeftBoundIsForward)
   {
-    var EStart = E,
-      Result = E;
+    var EStart, Result = E;
     var Horz;
-    var StartX;
-    if (E.Dx == ClipperLib.ClipperBase.horizontal)
-    {
-      //first we need to be careful here with open paths because this
-      //may not be a true local minima (ie may be following a skip edge).
-      //also, watch for adjacent horz edges to start heading left
-      //before finishing right ...
-      if (IsClockwise)
-      {
-        if (E.Prev.Bot.Y == E.Bot.Y) StartX = E.Prev.Bot.X;
-        else StartX = E.Prev.Top.X;
-      }
-      else
-      {
-        if (E.Next.Bot.Y == E.Bot.Y) StartX = E.Next.Bot.X;
-        else StartX = E.Next.Top.X;
-      }
-      if (E.Bot.X != StartX)
-        this.ReverseHorizontal(E);
-    }
-    if (Result.OutIdx != ClipperLib.ClipperBase.Skip)
-    {
-      if (IsClockwise)
-      {
-        while (Result.Top.Y == Result.Next.Bot.Y && Result.Next.OutIdx != ClipperLib.ClipperBase.Skip)
-          Result = Result.Next;
-        if (Result.Dx == ClipperLib.ClipperBase.horizontal && Result.Next.OutIdx != ClipperLib.ClipperBase.Skip)
-        {
-          //nb: at the top of a bound, horizontals are added to the bound
-          //only when the preceding edge attaches to the horizontal's left vertex
-          //unless a Skip edge is encountered when that becomes the top divide
-          Horz = Result;
-          while (Horz.Prev.Dx == ClipperLib.ClipperBase.horizontal)
-            Horz = Horz.Prev;
-          if (Horz.Prev.Top.X == Result.Next.Top.X)
-          {
-            if (!IsClockwise)
-              Result = Horz.Prev;
-          }
-          else if (Horz.Prev.Top.X > Result.Next.Top.X)
-            Result = Horz.Prev;
-        }
-        while (E != Result)
-        {
-          E.NextInLML = E.Next;
-          if (E.Dx == ClipperLib.ClipperBase.horizontal && E != EStart && E.Bot.X != E.Prev.Top.X)
-            this.ReverseHorizontal(E);
-          E = E.Next;
-        }
-        if (E.Dx == ClipperLib.ClipperBase.horizontal && E != EStart && E.Bot.X != E.Prev.Top.X)
-          this.ReverseHorizontal(E);
-        Result = Result.Next;
-        //move to the edge just beyond current bound
-      }
-      else
-      {
-        while (Result.Top.Y == Result.Prev.Bot.Y && Result.Prev.OutIdx != ClipperLib.ClipperBase.Skip)
-          Result = Result.Prev;
-        if (Result.Dx == ClipperLib.ClipperBase.horizontal && Result.Prev.OutIdx != ClipperLib.ClipperBase.Skip)
-        {
-          Horz = Result;
-          while (Horz.Next.Dx == ClipperLib.ClipperBase.horizontal)
-            Horz = Horz.Next;
-          if (Horz.Next.Top.X == Result.Prev.Top.X)
-          {
-            if (!IsClockwise)
-              Result = Horz.Next;
-          }
-          else if (Horz.Next.Top.X > Result.Prev.Top.X)
-            Result = Horz.Next;
-        }
-        while (E != Result)
-        {
-          E.NextInLML = E.Prev;
-          if (E.Dx == ClipperLib.ClipperBase.horizontal && E != EStart && E.Bot.X != E.Next.Top.X)
-            this.ReverseHorizontal(E);
-          E = E.Prev;
-        }
-        if (E.Dx == ClipperLib.ClipperBase.horizontal && E != EStart && E.Bot.X != E.Next.Top.X)
-          this.ReverseHorizontal(E);
-        Result = Result.Prev;
-        //move to the edge just beyond current bound
-      }
-    }
     if (Result.OutIdx == ClipperLib.ClipperBase.Skip)
     {
       //if edges still remain in the current bound beyond the skip edge then
       //create another LocMin and call ProcessBound once more
       E = Result;
-      if (IsClockwise)
+      if (LeftBoundIsForward)
       {
         while (E.Top.Y == E.Next.Bot.Y)
           E = E.Next;
@@ -2687,7 +2602,7 @@
       }
       if (E == Result)
       {
-        if (IsClockwise)
+        if (LeftBoundIsForward)
           Result = E.Next;
         else
           Result = E.Prev;
@@ -2695,7 +2610,7 @@
       else
       {
         //there are more edges in the bound beyond result starting with E
-        if (IsClockwise)
+        if (LeftBoundIsForward)
           E = Result.Next;
         else
           E = Result.Prev;
@@ -2705,10 +2620,91 @@
         locMin.LeftBound = null;
         locMin.RightBound = E;
         locMin.RightBound.WindDelta = 0;
-        Result = this.ProcessBound(locMin.RightBound, IsClockwise);
+        Result = this.ProcessBound(locMin.RightBound, LeftBoundIsForward);
         this.InsertLocalMinima(locMin);
       }
+      return Result;
     }
+
+    if (E.Dx == ClipperLib.ClipperBase.horizontal)
+    {
+      //We need to be careful with open paths because this may not be a
+      //true local minima (ie E may be following a skip edge).
+      //Also, consecutive horz. edges may start heading left before going right.
+      if (LeftBoundIsForward) EStart = E.Prev;
+      else EStart = E.Next;
+      if (EStart.Dx == ClipperLib.ClipperBase.horizontal) //ie an adjoining horizontal skip edge
+      {
+        if (EStart.Bot.X != E.Bot.X && EStart.Top.X != E.Bot.X)
+          this.ReverseHorizontal(E);
+      }
+      else if (EStart.Bot.X != E.Bot.X)
+        this.ReverseHorizontal(E);
+    }
+
+    EStart = E;
+    if (LeftBoundIsForward)
+    {
+      while (Result.Top.Y == Result.Next.Bot.Y && Result.Next.OutIdx != ClipperLib.ClipperBase.Skip)
+        Result = Result.Next;
+      if (Result.Dx == ClipperLib.ClipperBase.horizontal && Result.Next.OutIdx != ClipperLib.ClipperBase.Skip)
+      {
+        //nb: at the top of a bound, horizontals are added to the bound
+        //only when the preceding edge attaches to the horizontal's left vertex
+        //unless a Skip edge is encountered when that becomes the top divide
+        Horz = Result;
+        while (Horz.Prev.Dx == ClipperLib.ClipperBase.horizontal)
+          Horz = Horz.Prev;
+        if (Horz.Prev.Top.X == Result.Next.Top.X)
+        {
+          if (!LeftBoundIsForward)
+            Result = Horz.Prev;
+        }
+        else if (Horz.Prev.Top.X > Result.Next.Top.X)
+          Result = Horz.Prev;
+      }
+      while (E != Result)
+      {
+        E.NextInLML = E.Next;
+        if (E.Dx == ClipperLib.ClipperBase.horizontal && E != EStart && E.Bot.X != E.Prev.Top.X)
+          this.ReverseHorizontal(E);
+        E = E.Next;
+      }
+      if (E.Dx == ClipperLib.ClipperBase.horizontal && E != EStart && E.Bot.X != E.Prev.Top.X)
+        this.ReverseHorizontal(E);
+      Result = Result.Next;
+      //move to the edge just beyond current bound
+    }
+    else
+    {
+      while (Result.Top.Y == Result.Prev.Bot.Y && Result.Prev.OutIdx != ClipperLib.ClipperBase.Skip)
+        Result = Result.Prev;
+      if (Result.Dx == ClipperLib.ClipperBase.horizontal && Result.Prev.OutIdx != ClipperLib.ClipperBase.Skip)
+      {
+        Horz = Result;
+        while (Horz.Next.Dx == ClipperLib.ClipperBase.horizontal)
+          Horz = Horz.Next;
+        if (Horz.Next.Top.X == Result.Prev.Top.X)
+        {
+          if (!LeftBoundIsForward)
+            Result = Horz.Next;
+        }
+        else if (Horz.Next.Top.X > Result.Prev.Top.X)
+          Result = Horz.Next;
+      }
+      while (E != Result)
+      {
+        E.NextInLML = E.Prev;
+        if (E.Dx == ClipperLib.ClipperBase.horizontal && E != EStart && E.Bot.X != E.Next.Top.X)
+          this.ReverseHorizontal(E);
+        E = E.Prev;
+      }
+      if (E.Dx == ClipperLib.ClipperBase.horizontal && E != EStart && E.Bot.X != E.Next.Top.X)
+        this.ReverseHorizontal(E);
+      Result = Result.Prev;
+      //move to the edge just beyond current bound
+    }
+
     return Result;
   };
   ClipperLib.ClipperBase.prototype.AddPath = function (pg, polyType, Closed)
