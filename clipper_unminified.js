@@ -1,4 +1,4 @@
-// Since rev 454, only following revisions are added: 463,462,465,467+468,469
+// Since rev 454, only following revisions are added: 463,462,465,467+468,469,473
 /********************************************************************************
  *                                                                              *
  * Author    :  Angus Johnson                                                   *
@@ -2633,13 +2633,16 @@
       //Also, consecutive horz. edges may start heading left before going right.
       if (LeftBoundIsForward) EStart = E.Prev;
       else EStart = E.Next;
-      if (EStart.Dx == ClipperLib.ClipperBase.horizontal) //ie an adjoining horizontal skip edge
+      if (EStart.OutIdx != ClipperLib.ClipperBase.Skip)
       {
-        if (EStart.Bot.X != E.Bot.X && EStart.Top.X != E.Bot.X)
+        if (EStart.Dx == ClipperLib.ClipperBase.horizontal) //ie an adjoining horizontal skip edge
+        {
+          if (EStart.Bot.X != E.Bot.X && EStart.Top.X != E.Bot.X)
+            this.ReverseHorizontal(E);
+        }
+        else if (EStart.Bot.X != E.Bot.X)
           this.ReverseHorizontal(E);
       }
-      else if (EStart.Bot.X != E.Bot.X)
-        this.ReverseHorizontal(E);
     }
 
     EStart = E;
@@ -5868,7 +5871,7 @@
     {
       var outrec = this.m_PolyOuts[i++];
       var op = outrec.Pts;
-      if (op === null)
+      if (op === null || outrec.IsOpen)
         continue;
       do //for each Pt in Polygon until duplicate found do ...
       {
