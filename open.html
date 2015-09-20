@@ -42,18 +42,22 @@ function draw_input(title) {
   cont.innerHTML += svg + "<br>";
 }
 
-function draw_open_closed(delta, title, combined) {
+function draw_open_closed(delta, title, combined, subjectOnly) {
   cont.innerHTML += "<br><h3>" + title + "</h3>";
   var cpr = new ClipperLib.Clipper();
   cpr.AddPaths(subj_lines, ClipperLib.PolyType.ptSubject, false);
-  cpr.AddPaths(clip_polygons, ClipperLib.PolyType.ptClip, true);
+  if (subjectOnly == undefined)
+    cpr.AddPaths(clip_polygons, ClipperLib.PolyType.ptClip, true);
   var subject_fillType = ClipperLib.PolyFillType.pftNonZero;
   var clip_fillType = ClipperLib.PolyFillType.pftNonZero;
   var clipTypes = [ClipperLib.ClipType.ctUnion, ClipperLib.ClipType.ctDifference, ClipperLib.ClipType.ctXor, ClipperLib.ClipType.ctIntersection];
   var clipTypesTexts = "Union, Difference, Xor, Intersection";
   var solution_polygons, svg;
   var i;
-  for (i = 0; i < clipTypes.length; i++) {
+  var len = 1;
+  if (subjectOnly == undefined)
+    len = clipTypes.length;
+  for (i = 0; i < len; i++) {
     solution_polytree = new ClipperLib.PolyTree();
     cpr.Execute(clipTypes[i], solution_polytree, subject_fillType, clip_fillType);
     var solution_lines = ClipperLib.Clipper.OpenPathsFromPolyTree(solution_polytree);
@@ -84,7 +88,7 @@ function draw_open_closed(delta, title, combined) {
     }
     cont.innerHTML += svg;
   }
-  cont.innerHTML += "<br>" + clipTypesTexts + "<br>";
+  cont.innerHTML += "<br>" + ((subjectOnly == undefined)? clipTypesTexts : "") + "<br>";
 }
 
 // Converts Paths to SVG path string
@@ -113,6 +117,7 @@ function lines2string(poly, scale) {
 
 <body onload="cont = document.getElementById('svgcontainer');;
   draw_input('Input paths/polygon');
+  draw_open_closed(5,'Positive offset, subject paths only', false, false);
   draw_open_closed(0,'Open and closed, Booleans');
   draw_open_closed(5, 'Open and closed, Positive offset');
   draw_open_closed(5, 'Open and closed, Combined, Positive offset', true);
