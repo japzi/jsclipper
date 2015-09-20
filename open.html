@@ -1,0 +1,133 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Javascript Clipper Library / Open and closed paths</title>
+  <script src="clipper_unminified.js"></script>
+  <style>
+    h3{ margin-bottom:2px}
+    body,th,td,input,legend,fieldset,p,b,button,select,textarea {
+      font-size: 14px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    </style>
+  <script>
+var subj_lines = [[{"X":0,"Y":5},{"X":10,"Y":5},{"X":10,"Y":-5},{"X":0,"Y":-5},{"X":0,"Y":5}],[{"X":15,"Y":5},{"X":15,"Y":-5}],[{"X":20,"Y":15},{"X":20,"Y":-15}]];
+var clip_polygons = [[{"X":5,"Y":10},{"X":25,"Y":10},{"X":25,"Y":-10},{"X":5,"Y":-10},{"X":5,"Y":10}]];
+
+function transformPoint(point) {
+  return {X: (point.X + 1) * 12, Y: 7 * (point.Y + 16)};
+}
+
+function transformPolygons(polygon) {
+  return polygon.map(transformPoint);
+}
+
+subj_lines = subj_lines.map(transformPolygons);
+clip_polygons = clip_polygons.map(transformPolygons);
+
+var scale = 100;
+ClipperLib.JS.ScaleUpPaths(subj_lines, scale);
+ClipperLib.JS.ScaleUpPaths(clip_polygons, scale);
+
+function draw_input(title) {
+  cont.innerHTML += "<br><h3>" + title + "</h3><h4>red: subject paths, one path with matching start/end points, two open lines<br/>yellow: clip closed polygon</h4>";
+  var solution_polygons, svg;
+  var i;
+  svg = '<svg width="350" height="222" style="margin-top:10px; margin-right:10px;margin-bottom:10px;background-color:#dddddd">';
+  svg += '<path stroke="black" fill="yellow" stroke-width="2" d="' + paths2string(clip_polygons, scale) + '"/>';
+  svg += '<path stroke="red" fill="none" stroke-width="2" d="' + lines2string(subj_lines, scale) + '"/>';
+  svg += '</svg>';
+  cont.innerHTML += svg + "<br>";
+}
+
+function draw_open_closed(delta, title, combined) {
+  cont.innerHTML += "<br><h3>" + title + "</h3>";
+  var cpr = new ClipperLib.Clipper();
+  cpr.AddPaths(subj_lines, ClipperLib.PolyType.ptSubject, false);
+  cpr.AddPaths(clip_polygons, ClipperLib.PolyType.ptClip, true);
+  var subject_fillType = ClipperLib.PolyFillType.pftNonZero;
+  var clip_fillType = ClipperLib.PolyFillType.pftNonZero;
+  var clipTypes = [ClipperLib.ClipType.ctUnion, ClipperLib.ClipType.ctDifference, ClipperLib.ClipType.ctXor, ClipperLib.ClipType.ctIntersection];
+  var clipTypesTexts = "Union, Difference, Xor, Intersection";
+  var solution_polygons, svg;
+  var i;
+  for (i = 0; i < clipTypes.length; i++) {
+    solution_polytree = new ClipperLib.PolyTree();
+    cpr.Execute(clipTypes[i], solution_polytree, subject_fillType, clip_fillType);
+    var solution_lines = ClipperLib.Clipper.OpenPathsFromPolyTree(solution_polytree);
+    var solution_polygons = ClipperLib.Clipper.ClosedPathsFromPolyTree(solution_polytree);
+    if (delta == 0) {
+      svg = '<svg width="350" height="222" style="margin-top:10px; margin-right:10px;margin-bottom:10px;background-color:#dddddd">';
+      svg += '<path stroke="black" fill="yellow" stroke-width="2" d="' + paths2string(solution_polygons, scale) + '"/>';
+      svg += '<path stroke="red" fill="none" stroke-width="2" d="' + lines2string(solution_lines, scale) + '"/>';
+      svg += '</svg>';
+    }
+    else {
+      var co = new ClipperLib.ClipperOffset(2, 0.25);
+      co.AddPaths(solution_polygons, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+      var solution_polytree = new ClipperLib.PolyTree();
+      co.Execute(solution_polytree, delta * scale);
+      solution_polygons = ClipperLib.Clipper.PolyTreeToPaths(solution_polytree, solution_polygons);
+      if (!combined) co.Clear();
+      co.AddPaths(solution_lines,  ClipperLib.JoinType.jtRound, ClipperLib.EndType.etOpenRound);
+      var solution_lines_polytree = new ClipperLib.PolyTree();
+      co.Execute(solution_lines_polytree, delta * scale);
+      solution_lines = ClipperLib.Clipper.PolyTreeToPaths(solution_lines_polytree, solution_lines);
+      svg = '<svg width="350" height="222" style="margin-top:10px; margin-right:10px;margin-bottom:10px;background-color:#dddddd">';
+      svg += '<path stroke="black" fill="yellow" stroke-width="2" d="' + paths2string(solution_polygons, scale) + '"/>';
+      svg += '<path stroke="black" fill="red" stroke-width="2" d="' + paths2string(solution_lines, scale) + '"/>';
+      svg += '</svg>';
+      //console.log(JSON.stringify(solution_polygons));
+      //console.log(JSON.stringify(solution_lines));
+    }
+    cont.innerHTML += svg;
+  }
+  cont.innerHTML += "<br>" + clipTypesTexts + "<br>";
+}
+
+// Converts Paths to SVG path string
+// and scales down the coordinates
+function paths2string(paths, scale, isline) {
+  var svgpath = "",
+    i, j;
+  if (!scale) scale = 1;
+  for (i = 0; i < paths.length; i++) {
+    for (j = 0; j < paths[i].length; j++) {
+      if (!j) svgpath += "M";
+      else svgpath += "L";
+      svgpath += (paths[i][j].X / scale) + ", " + (paths[i][j].Y / scale);
+    }
+    if (!isline) svgpath += "Z";
+  }
+  if (svgpath == "") svgpath = "M0,0";
+  return svgpath;
+}
+// converts lines to SVG path string
+function lines2string(poly, scale) {
+  return paths2string(poly, scale, true);
+}
+  </script>
+</head>
+
+<body onload="cont = document.getElementById('svgcontainer');;
+  draw_input('Input paths/polygon');
+  draw_open_closed(0,'Open and closed, Booleans');
+  draw_open_closed(5, 'Open and closed, Positive offset');
+  draw_open_closed(5, 'Open and closed, Combined, Positive offset', true);
+  draw_open_closed(-5, 'Open and closed, Negative offset')">
+  <!--
+Boolean test
+Offset test
+Open/Closed paths test
+PolyTree
+Area test
+Get bounds test
+
+  -->
+  <h2>Javascript Clipper Library / Open and closed paths</h2>
+  <div id="svgcontainer" style="width:1500px"></div>
+</body>
+
+</html>
